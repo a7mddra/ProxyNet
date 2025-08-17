@@ -1,0 +1,7 @@
+# Device Configuration
+DevicePIN="1952"
+DeviceIP="192.168.1.2"
+DevicePort="5555"
+ProxyURL="127.0.0.1"
+ProxyPort="1080"
+ConfigPath="assets/config.hc"

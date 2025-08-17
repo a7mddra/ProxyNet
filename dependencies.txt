@@ -1,0 +1,7 @@
+build-essential
+gcc
+g++
+libpam0g-dev
+libpam-dev
+ca-certificates
+adb
