@@ -37,8 +37,12 @@
 #include <unordered_map>
 #include <vector>
 
+#ifdef __linux__
+#include <pthread.h>
+#include <sched.h>
+#endif
+
 using namespace std;
 using namespace chrono;
 using namespace filesystem;
 using namespace this_thread;
-using ll = long long;

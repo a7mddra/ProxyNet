@@ -2,8 +2,7 @@
 
 Data loaddata(const string& filepath) {
     Data data;
-    auto abs = std::filesystem::absolute(filepath);
-    cout << "loaddata: reading " << abs << '\n';
+    auto abs = absolute(filepath);
 
     ifstream file(filepath);
     if (!file.is_open()) {
@@ -11,12 +10,18 @@ Data loaddata(const string& filepath) {
     }
 
     unordered_map<string, string*> mp = {
-        {"DevicePIN",   &data.DevicePIN},
-        {"DeviceIP",    &data.DeviceIP},
-        {"DevicePort",  &data.DevicePort},
-        {"ProxyURL",    &data.ProxyURL},
-        {"ProxyPort",   &data.ProxyPort},
-        {"ConfigPath",      &data.ConfigPath}
+        {"MDeviceHeight", &data.MDeviceHeight},
+        {"MDeviceWidth",  &data.MDeviceWidth },        
+        {"DeviceHeight",  &data.DeviceHeight },
+        {"DeviceWidth",   &data.DeviceWidth  },
+        {"DevicePort",    &data.DevicePort   },
+        {"DevicePIN",     &data.DevicePIN    },
+        {"DeviceIP",      &data.DeviceIP     },
+        {"ApkX",          &data.ApkX         },
+        {"ApkY",          &data.ApkY         },
+        {"ProxyURL",      &data.ProxyURL     },
+        {"ProxyPort",     &data.ProxyPort    },
+        {"ConfigPath",    &data.ConfigPath   }
     };
 
     string line;
@@ -36,8 +41,7 @@ Data loaddata(const string& filepath) {
 }
 
 Data editdata(const Data& data, const string& filepath) {
-    auto abs = std::filesystem::absolute(filepath);
-    cout << "editdata: writing " << abs << '\n';
+    auto abs = absolute(filepath);
 
     FILE *f = fopen(filepath.c_str(), "w");
     if (!f) {
@@ -45,9 +49,15 @@ Data editdata(const Data& data, const string& filepath) {
     }
 
     int res = fprintf(f, "# Device Configuration\n");
+    res += fprintf(f, "MDeviceHeight=\"%s\"\n", data.MDeviceHeight.c_str());
+    res += fprintf(f, "MDeviceWidth=\"%s\"\n", data.MDeviceWidth.c_str());    
+    res += fprintf(f, "DeviceHeight=\"%s\"\n", data.DeviceHeight.c_str());
+    res += fprintf(f, "DeviceWidth=\"%s\"\n", data.DeviceWidth.c_str());
+    res += fprintf(f, "DevicePort=\"%s\"\n", data.DevicePort.c_str());
     res += fprintf(f, "DevicePIN=\"%s\"\n", data.DevicePIN.c_str());
     res += fprintf(f, "DeviceIP=\"%s\"\n", data.DeviceIP.c_str());
-    res += fprintf(f, "DevicePort=\"%s\"\n", data.DevicePort.c_str());
+    res += fprintf(f, "ApkX=\"%s\"\n", data.ApkX.c_str());
+    res += fprintf(f, "ApkY=\"%s\"\n", data.ApkY.c_str());
     res += fprintf(f, "ProxyURL=\"%s\"\n", data.ProxyURL.c_str());
     res += fprintf(f, "ProxyPort=\"%s\"\n", data.ProxyPort.c_str());
     res += fprintf(f, "ConfigPath=\"%s\"\n", data.ConfigPath.c_str());
@@ -72,5 +82,5 @@ Data editdata(const Data& data, const string& filepath) {
 }
 
 Data resetdata(const string& filepath) {
-    return editdata(loaddata("assets/sudo.txt"), filepath);
+    return editdata(loaddata("assets/backup.txt"), filepath);
 }

@@ -17,7 +17,28 @@ string readLine(const string &prompt) {
         iflush();
     }
     string line;
-    if (!getline(cin, line)) return string{};
+    
+    int old_flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+    termios oldt{};
+    if (tcgetattr(STDIN_FILENO, &oldt) != 0) {
+        
+        if (!getline(cin, line)) line.clear();
+        return line;
+    }
+    
+    termios newt = oldt;
+    newt.c_lflag |= (ICANON | ECHO);         
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+    if (old_flags & O_NONBLOCK) {
+        fcntl(STDIN_FILENO, F_SETFL, old_flags & ~O_NONBLOCK); 
+    }
+    
+    if (!getline(cin, line)) line.clear();
+    
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    fcntl(STDIN_FILENO, F_SETFL, old_flags);
+
     return line;
 }
 
@@ -26,22 +47,29 @@ string readPassword(const string &prompt) {
         cout << prompt;
         iflush();
     }
-
+    string pw;
+    
+    int old_flags = fcntl(STDIN_FILENO, F_GETFL, 0);
     termios oldt{};
     if (tcgetattr(STDIN_FILENO, &oldt) != 0) {
-        string fallback;
-        getline(cin, fallback);
+        
+        if (!getline(cin, pw)) pw.clear();
         cout << el;
-        return fallback;
+        return pw;
     }
+    
     termios newt = oldt;
-    newt.c_lflag &= ~ECHO;
+    newt.c_lflag |= ICANON;      
+    newt.c_lflag &= ~ECHO;       
     tcsetattr(STDIN_FILENO, TCSANOW, &newt);
 
-    string pw;
-    if (!getline(cin, pw)) pw.clear();
+    if (old_flags & O_NONBLOCK) {
+        fcntl(STDIN_FILENO, F_SETFL, old_flags & ~O_NONBLOCK);
+    }
 
+    if (!getline(cin, pw)) pw.clear();   
     tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+    fcntl(STDIN_FILENO, F_SETFL, old_flags);
     cout << el;
     return pw;
 }
@@ -106,7 +134,6 @@ int getKey() {
     ssize_t n = read(STDIN_FILENO, &c, 1);
     if (n <= 0) return -1;
 
-    // Handle escape sequences
     if (c == '\033') {
         char seq[2];
         if (read(STDIN_FILENO, &seq[0], 1) <= 0) return 27;
@@ -114,23 +141,19 @@ int getKey() {
 
         if (seq[0] == '[') {
             switch(seq[1]) {
-                case 'A': return 'U'; // Up
-                case 'B': return 'D'; // Down
-                case 'C': return 'R'; // Right
-                case 'D': return 'L'; // Left
+                case 'A': return 'U'; 
+                case 'B': return 'D'; 
+                case 'C': return  -1;
+                case 'D': return  -1;
             }
         }
         return 27;
     }
 
-    // Map special keys
     switch(c) {
-        case '\n': case '\r': return 'E'; // Enter
-        case ' ': return 'S';             // Space
-        case 127: return 'B';             // Backspace
-        case 'q': case 'Q': return 'Q';   // Quit
-        case 'r': case 'R': return 'R';   // Retry
-        case 'y': case 'Y': return 'Y';   // Yes
+        case '\n': case '\r': return 'E'; 
+        case 'q' : case 'Q' : return 'Q';   
+        case 'y' : case 'Y' : return 'Y';   
         default: return c;
     }
 }

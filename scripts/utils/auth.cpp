@@ -1,11 +1,12 @@
 #include "project.hpp"
 
 using namespace std;
-extern "C" int pam_conv_fn(int num_msg,
-                           const struct pam_message** msg,
-                           struct pam_response** resp,
-                           void* appdata_ptr)
-{
+extern "C" int pam_conv_fn(
+    int num_msg,
+    const struct pam_message** msg,
+    struct pam_response** resp,
+    void* appdata_ptr
+) {
     if (num_msg <= 0 || !msg) return PAM_CONV_ERR;
 
     *resp = (pam_response*)calloc(static_cast<size_t>(num_msg), sizeof(struct pam_response));
@@ -25,8 +26,7 @@ extern "C" int pam_conv_fn(int num_msg,
                     free(*resp);
                     *resp = nullptr;
                     return PAM_BUF_ERR;
-                }
-                break;
+                } break;
             case PAM_TEXT_INFO:
                 if (msg[i]->msg) cout << msg[i]->msg << el;
                 (*resp)[i].resp = nullptr;
@@ -52,32 +52,17 @@ struct TermGuard {
         tcsetattr(STDIN_FILENO, TCSANOW, &newt);
         active = true;
     }
-    ~TermGuard() {
-        if (active) tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
-    }
+    ~TermGuard() { if (active) tcsetattr(STDIN_FILENO, TCSANOW, &oldt); }
 };
-static string read_password_for(const string& username) {
-    string prompt = string("[sudo] password for ") + username + ": ";
-    cout << prompt << flush;
 
-    TermGuard tg;
-    tg.disable_echo();
-
-    string pw;
-    if (!getline(cin, pw)) pw.clear();
-    cout << el;
-    return pw;
-}
 static int authenticate_once(const char* username, const char* password) {
     pam_handle_t* pamh = nullptr;
     struct pam_conv conv = { pam_conv_fn, const_cast<char*>(password) };
 
     int retval = pam_start("sudo", username, &conv, &pamh);
     if (retval != PAM_SUCCESS) {
-        if (pamh)
-            cerr << "pam_start failed: " << pam_strerror(pamh, retval) << el;
-        else
-            cerr << "pam_start failed (no pam handle): " << retval << el;
+        if (pamh) cerr << "pam_start failed: " << pam_strerror(pamh, retval) << el;
+        else cerr << "pam_start failed (no pam handle): " << retval << el;
         return -1;
     }
 
@@ -93,43 +78,41 @@ static int authenticate_once(const char* username, const char* password) {
 }
 
 bool auth() {
-    struct passwd* pw = getpwuid(getuid());
     string username;
-    if (pw && pw->pw_name) username = pw->pw_name;
-    else {
+    if (const char* su = getenv("SUDO_USER"); su && *su) username = su;
+    else if (const char* suid = getenv("SUDO_UID"); suid && *suid) {
+        try { uid_t orig_uid = static_cast<uid_t>(std::stoul(suid));
+            if (struct passwd* pw = getpwuid(orig_uid)) 
+                if (pw->pw_name) username = pw->pw_name;
+        } catch (...) {}
+    } if (username.empty())
+        if (char* gl = getlogin()) username = string(gl);
+    if (username.empty())
+        if (struct passwd* pw = getpwuid(getuid()))
+            if (pw->pw_name) username = pw->pw_name;
+    if (username.empty()) {
         const char* envu = getenv("USER");
-        username = envu ? envu : "user";
+        username = envu ? envu : string("user");
     }
 
     const int max_attempts = 3;
     for (int attempt = 0; attempt < max_attempts; ++attempt) {
-        string password = read_password_for(username);
+        string prompt = "[sudo] password for " + username + ": ";
+        string password = readPassword(prompt);
 
         if (password.empty()) {
-
             if (attempt < max_attempts - 1) cout << "Sorry, try again." << el;
-
             fill(password.begin(), password.end(), 0);
             password.clear();
             continue;
         }
 
         int r = authenticate_once(username.c_str(), password.c_str());
-
         fill(password.begin(), password.end(), 0);
         password.clear();
 
-        if (r == PAM_SUCCESS) {
-
-            return true;
-        } else if (r == -1) {
-
-            return false;
-        } else {
-
-            if (attempt < max_attempts - 1) cout << "Sorry, try again." << el;
-
-        }
-    }
-    return false;
+        if (r == PAM_SUCCESS) return true;
+        else if (r == -1) return false;
+        else if (attempt < max_attempts - 1) cout << "Sorry, try again." << el;
+    } return false;
 }

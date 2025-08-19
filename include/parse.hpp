@@ -2,9 +2,15 @@
 #include "headers.hpp"
 
 struct Data {
+    string MDeviceHeight;
+    string MDeviceWidth;
+    string DeviceHeight;
+    string DeviceWidth;
+    string DevicePort;
     string DevicePIN;
     string DeviceIP;
-    string DevicePort;
+    string ApkX;
+    string ApkY;
     string ProxyURL;
     string ProxyPort;
     string ConfigPath;

@@ -10,7 +10,7 @@ public:
     string execute(const string& command);
     void setOutputCallback(function<void(const string&)> callback);
     template <typename... Args>
-    string runShell(const string& scriptName, Args&&... args) {
+    string runShell(const string& scriptName, bool inNewTerminal, Args&&... args) {
         buffer.clear();
         path scriptPath = absolute("scripts/shell/" + scriptName + ".sh");
         string script = scriptPath.string();
@@ -31,8 +31,28 @@ public:
         argv.push_back(script); 
         
         (argv.push_back(string(forward<Args>(args))), ...);
-        int status = runCommandVec(argv);
 
+        if (inNewTerminal) {
+            string realUser = execute("logname");  
+            realUser = cleanOutput(realUser);
+
+            string dbusAddr = "unix:path=/run/user/$(id -u " + realUser + ")/bus";
+            string cmd = "sudo -u " + realUser +
+                        " DBUS_SESSION_BUS_ADDRESS=" + dbusAddr +
+                        " gnome-terminal -- bash -c '";
+
+            for (size_t i = 0; i < argv.size(); ++i) {
+                cmd += argv[i];
+                if (i + 1 < argv.size()) cmd += " ";
+            }
+
+            cmd += "; exec bash'";
+
+            system(cmd.c_str());
+            return "";
+        }
+
+        int status = runCommandVec(argv);
         if (status != 0) 
             return "Command failed: " + to_string(status);
         
@@ -42,6 +62,7 @@ public:
         
         return cleanOutput(buffer);
     }
+
 
 private:
     int runCommandVec(const vector<string>& argv);

@@ -1,123 +1,86 @@
 #include "project.hpp"
-#define run shell.runShell
 
 void App::startConfig() {
-    state = CONNECT;
-    options = {"Cancel"};
-    curr = 0;
-    refreshUI(curr);
-    
     Shell shell;
-    steady_clock clk;
-    atomic<bool> init_done(false);
-    atomic<bool> init_success(false);
-    atomic<bool> canceled(false);
-    
-    void cancel([&]() {
-        run("reset");
-        sleep(1);
-        processing = false;
-        canceled = true;
-        init_done = true;
-        state = MAIN;
-        options = mainOptions;
-        curr = 0;
-        updateLog(curr);
-        refreshUI(curr);
-        return;
-    });
 
-    auto init_future = async(launch::async, [&]() {
-        auto start = clk.now();
-        while (!init_done) {
-            bool success = run("init", data.DeviceIP, data.DevicePort, 
-                              data.ProxyURL, data.ProxyPort) == "1";
-                              
-            if (success) {
-                init_success = true;
-                init_done = true;
-                return true;
-            }
-            
-            if (clk.now() - start > 30s) {
-                log = "Connection timed out";
-                init_done = true;
-                return false;
-            }
-            
-            sleep_for(milliseconds(1500));
-            
-            if (canceled) cancel();
+    auto isreachable_local = [&]() -> bool {
+        string res = shell.runShell("adb", false, data.DeviceIP, data.DevicePort);
+        if (res == "0") {
+            unreachable = true;
+            updateState(MAIN, mainOptions);
+            return false;
         }
-        return false;
-    });
-    
-    int it = 0;
-    int dir = 1;
-    int attempt = 1;
+        unreachable = false;
+        return true;
+    };
 
-    while (!init_done) {
-        string status;
-        switch (it) {
-            case 0: status = "Connecting 🖳 =    🗂"; break;
-            case 1: status = "Connecting 🖳 ==   🗂"; break;
-            case 2: status = "Connecting 🖳  ==  🗂"; break;
-            case 3: status = "Connecting 🖳   == 🗂"; break;
-            case 4: status = "Connecting 🖳    ==🗂"; break;
-            case 5: status = "Connecting 🖳     =🗂"; break;
-        }
+    if (!isreachable_local()) return;
+    updateState(CONNECT, connectOptions);
 
-        log = status;
-        refreshUI(curr);
-        
-        int key = getKey();
-        if (key == 'E' || key == 'Q' || key == 27) cancel();
-        
-        if (key == 'R') attempt++;
+    const vector<string> anim = {
+        " 🖳 =    🗂",
+        " 🖳 ==   🗂",
+        " 🖳  ==  🗂",
+        " 🖳   == 🗂",
+        " 🖳    ==🗂",
+        " 🖳     =🗂"
+    };
 
-        it += dir;
+    connecting.store(true);
 
-        if (it > 4) dir = -1;
-        else if (it <= 0) dir = 1;
 
-        sleep_for(milliseconds(150));
-    }
-    
-    init_future.wait();
-    processing = init_success;
+    thread([this, anim]() mutable {
+    #ifdef __linux__
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(1, &cpuset);
+        pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
 
-    if (canceled) cancel();
-    
-    auto last_refresh = clk.now();
-    while(processing) {
-        auto now = clk.now();
-        
-        bool connect = run("vpn") == "1";
-        bool share = run("proxy") == "1";
-        
-        if (connect && share) {
-            log = "✓ VPN & Proxy: ACTIVE";
-        } else if (connect) {
-            log = "✓ VPN: ACTIVE, ✗ Proxy: DOWN";
-        } else if (share) {
-            log = "✗ VPN: DOWN, ✓ Proxy: ACTIVE";
-        } else {
-            log = "✗ VPN & Proxy: DOWN";
-        }
-        
-        if (duration_cast<milliseconds>(now - last_refresh) > 100ms) {
+    #endif
+        size_t idx = 0;
+        int dir = 1;
+        while (connecting.load()) {
+            log = "Connecting " + anim[idx];
             refreshUI(curr);
-            last_refresh = now;
-        }
-        
-        if (!connect) run("connect");
-        if (!share) run("share");
-        
-        int key = getKey();
-        if (key == 'E' || key == 'Q' || key == 27) cancel();
-        
-        sleep_for(milliseconds(100));
-    }
+            if (dir == 1) {
+                if (idx + 1 < anim.size()) idx++;
+                else { dir = -1; if (idx > 0) idx--; }
+            } else {
+                if (idx > 0) idx--;
+                else { dir = 1; if (anim.size() > 1) idx++; }
+            }
+            sleep_for(milliseconds(120));
+        } refreshUI(curr);
+
+    }).detach();
+
     
-    cancel();
+    thread([this]() mutable {
+    #ifdef __linux__
+        cpu_set_t cpuset;
+        CPU_ZERO(&cpuset);
+        CPU_SET(0, &cpuset);
+        pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+
+    #endif
+        Shell shell;
+        shell.runShell("init", false, data.ProxyURL, data.ProxyPort);
+        if (shell.runShell("unlock", false, data.DevicePIN) == "0") {
+            log = "Failed to unlock your phone.";
+            refreshUI(curr);
+            connecting.store(false);
+            return;
+        }
+
+        shell.runShell("launch", false, data.ConfigPath);
+
+        int x = (stoi(data.ApkX) * stoi(data.DeviceWidth))  / stoi(data.MDeviceWidth);
+        int y = (stoi(data.ApkY) * stoi(data.DeviceHeight)) / stoi(data.MDeviceHeight);
+        checkSplash(x, y);
+
+        log = "done";
+        refreshUI(curr);
+        
+        connecting.store(false);
+    }).detach();
 }
