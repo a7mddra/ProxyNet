@@ -60,17 +60,17 @@ make run
 
 ```ini
 # Device Configuration
-MDeviceHeight="1600"    # Measuring device height
-MDeviceWidth="720"      # Measuring device width  
-DeviceHeight=           # Your actual device height
-DeviceWidth=            # Your actual device width
-DevicePort=             # ADB device port
-DevicePIN=              # Your phone PIN code
-DeviceIP=               # Your phone IP address
-ApkX="250"              # HTTP Custom splash X ratio
-ApkY="840"              # HTTP Custom splash Y ratio
-ProxyURL=               # SOCKS proxy URL
-ProxyPort=              # SOCKS proxy port
+MDeviceHeight="1600"           # Measuring device height
+MDeviceWidth="720"             # Measuring device width  
+DeviceHeight=                  # Your actual device height
+DeviceWidth=                   # Your actual device width
+DevicePort=                    # ADB device port
+DevicePIN=                     # Your phone PIN code
+DeviceIP=                      # Your phone IP address
+ApkX="250"                     # HTTP Custom splash X ratio
+ApkY="840"                     # HTTP Custom splash Y ratio
+ProxyURL=                      # SOCKS proxy URL
+ProxyPort=                     # SOCKS proxy port
 ConfigPath="assets/config.hc"  # HTTP Custom config file
 ```
 
