@@ -30,7 +30,7 @@ void App::monitor() {
 
 void App::unlock() {
     Shell shell;
-    if (!inRange()) return; processing.store(true);
+    if (!inRange()) {return;} processing.store(true);
     if (shell.runShell("unlock", false, data.DevicePIN) == "0") {
         log = "Failed to unlock your phone.";
     } log = "Device unlocked.";
