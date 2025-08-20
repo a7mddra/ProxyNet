@@ -1,6 +1,6 @@
 # ProxyNet 🌐⚡
 
-*A genome-terminal control panel that bridges your Ubuntu machine with Android's HTTP Custom app through ADB*
+*A genome-terminal control panel that bridges your Ubuntu machine with Android's `HTTP Custom` app through ADB*
 
 ## ✨Key Features
 
