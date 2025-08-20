@@ -6,8 +6,8 @@
 #include "auth.hpp"
 #include "app.hpp"
 
-using namespace shell;
-using namespace color;
+using namespace cr;
+using namespace sh;
 using namespace ui;
 
 extern string el;

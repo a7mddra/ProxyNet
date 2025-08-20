@@ -130,6 +130,7 @@ size_t center(const string &l, bool a, char c, int del) {
 }
 
 int getKey() {
+    if(App().processing.load()) return -1;
     char c;
     ssize_t n = read(STDIN_FILENO, &c, 1);
     if (n <= 0) return -1;

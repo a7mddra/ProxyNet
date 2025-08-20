@@ -34,7 +34,7 @@ $(OBJ_DIR)/%.o: %.cpp | $(OBJ_DIR)
 $(OBJ_DIR):
 	@mkdir -p $(OBJ_DIR)
 
-install-deps:
+dep:
 	@if [ -z "$$(command -v apt-get 2>/dev/null)" ]; then \
 		echo "apt-get not found - install dependencies manually"; exit 1; \
 	fi

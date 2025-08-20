@@ -1,7 +1,7 @@
 #pragma once
 #include "headers.hpp"
 
-namespace color {
+namespace cr {
     
     inline string red(char c) 
         { return "\033[1;31m" + string(1, c) + "\033[0m"; }

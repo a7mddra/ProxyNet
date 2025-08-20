@@ -19,13 +19,11 @@ void App::drawLog(bool a, int del) {
         center(log, a, 'b', del);
 }
 
-void App::updateState(MenuState st, vector<string>& opt) {
-    if (state == CONNECT) 
-        Shell().runShell("reset", false);
-    curr = 0;
+void App::updateState(MenuState st, vector<string>& opt, size_t cur) {
+    curr = cur;
     state = st;
     options = opt;
-    updateLog(0);
+    updateLog(cur);
     refreshUI();
 }
 
@@ -37,10 +35,6 @@ void App::drawOptions(size_t curr) {
 void App::updateLog(size_t curr) {
     if (options[curr] == "Edit Defaults") 
         log = "Warning: this will overwrite factory defaults";
-    else if (unreachable)
-        log = "Please connect your phone via ADB first.";
-    else if (state == CONNECT) 
-        log = "Connecting 🖳 =    🗂";
     else if (mp.count(options[curr]))
         log = *mp[options[curr]].value;
     else log = LOG;
@@ -72,7 +66,7 @@ void App::render() {
             refreshUI(curr);
         }
         int key = getKey(), op = options.size();
-        if(!connecting.load()) switch (key) {
+        switch (key) {
             case -1: continue; break;
 
             case 'U': curr = (curr-1+op) % op;

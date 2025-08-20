@@ -1,20 +1,5 @@
 #include "project.hpp"
 
-void App::drawSettings() {
-    state = SETTINGS;
-    options = settingsOptions;
-    curr = 0;
-    updateLog(curr);
-    refreshUI();
-}
-
-void App::viewData() {
-    state = VIEWDATA;
-    options = dataOptions;
-    curr = options.size() - 1;
-    refreshUI(curr);
-}
-
 void App::resetSettings() {
     log = "Do you want to reset to factory defaults? [y]";
     refreshUI(curr);
@@ -33,13 +18,6 @@ void App::resetSettings() {
         log = "Reset canceled.";
         refreshUI(curr);
     }
-}
-
-void App::editData() {
-    state = EDITDATA;
-    options = dataOptions;
-    curr = options.size() - 1;
-    refreshUI(curr);
 }
 
 bool App::sudo() {

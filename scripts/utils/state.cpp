@@ -5,18 +5,18 @@ void App::stateAction() {
 
         case MAIN:
             switch (curr) {
-                case 0: startConfig(); break;
-                case 1: connectADB(); break;
-                case 2: drawSettings(); break;
+                case 0:  updateState(CONNECT,   connectOptions); break;
+                case 1:  updateState(SETTINGS, settingsOptions); break;
+                case 2:  reset(); break;
                 default: running = false; break;
             } break;
 
         case SETTINGS:
             switch (curr) {
-                case 0: viewData(); break;
-                case 1: editData(); break;
-                case 2: resetSettings(); break;
-                case 3: editDefaults();  break;
+                case 0:  updateState(VIEWDATA, dataOptions, dataOptions.size()-1); break;
+                case 1:  updateState(EDITDATA, dataOptions, dataOptions.size()-1); break;
+                case 2:  resetSettings(); break;
+                case 3:  editDefaults (); break;
                 default: updateState(MAIN, mainOptions); break;
             } break;
 
@@ -43,7 +43,14 @@ void App::stateAction() {
                 default: updateState(SETTINGS, settingsOptions); break;
             } break;
         
-        case CONNECT: updateState(MAIN, mainOptions); break;
+        case CONNECT:
+            switch (curr) {
+                case 0:  startConfig(); break;
+                case 1:  connectADB (); break;
+                case 2:  monitor    (); break;
+                case 3:  unlock     (); break;
+                default: updateState(MAIN, mainOptions); break;
+            } break;
 
         default: break;
     }

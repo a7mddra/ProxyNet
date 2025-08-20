@@ -1,7 +1,7 @@
 #pragma once
 #include "headers.hpp"
 
-namespace shell {
+namespace sh {
 
 class Shell {
 public:

@@ -16,7 +16,6 @@ adb shell input keyevent 82 >/dev/null 2>&1
 adb shell input text "$PIN" >/dev/null 2>&1
 adb shell input keyevent 66 >/dev/null 2>&1
 
-sleep 0.5
 if ! is_locked; then
     printf "1"
 else

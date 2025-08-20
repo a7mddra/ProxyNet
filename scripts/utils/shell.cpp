@@ -1,6 +1,6 @@
 #include "project.hpp"
 
-namespace shell {
+namespace sh {
 
 Shell::Shell() : outputCallback(nullptr) {}
 Shell::~Shell() {}
@@ -33,79 +33,46 @@ int Shell::runCommand(const string& full_command) {
 int Shell::runCommandVec(const vector<string>& argv) {
     
     buffer.clear();
-
     int pipefd[2];
-    if (pipe(pipefd) == -1) {
-        return -1;
-    }
-
+    if (pipe(pipefd) == -1) return -1;
     pid_t pid = fork();
     if (pid == -1) {
         close(pipefd[0]);
         close(pipefd[1]);
         return -1;
-    }
-
-    if (pid == 0) {
-        
+    } if (pid == 0) {
         close(pipefd[0]);
-        
         dup2(pipefd[1], STDOUT_FILENO);
         dup2(pipefd[1], STDERR_FILENO);
         close(pipefd[1]);
-
-        
         vector<char*> cargv;
         cargv.reserve(argv.size() + 1);
-        for (const auto &s : argv) {
-            cargv.push_back(const_cast<char*>(s.c_str()));
-        }
+        for (const auto &s : argv) cargv.push_back(const_cast<char*>(s.c_str()));
         cargv.push_back(nullptr);
-
-        
         execv(cargv[0], cargv.data());
-
-        
         _exit(127);
     } else {
-        
         close(pipefd[1]);
-
-        
         int flags = fcntl(pipefd[0], F_GETFL, 0);
         if (flags != -1) fcntl(pipefd[0], F_SETFL, flags | O_NONBLOCK);
-
         char buf[1024];
         ssize_t count;
-
         while (true) {
             count = read(pipefd[0], buf, sizeof(buf) - 1);
             if (count > 0) {
                 buf[count] = '\0';
                 buffer += buf;
                 if (outputCallback) outputCallback(string(buf, count));
-            } else if (count == 0) {
-                
-                break;
-            } else {
-                if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    
-                } else {
-                    
-                    break;
-                }
-            }
-            
-            usleep(10000);
-        }
-
-        close(pipefd[0]);
-
+            } else if (count == 0) break;
+            else {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) { } 
+                else  break;
+            } usleep(10000);
+        } close(pipefd[0]);
         int status = 0;
         waitpid(pid, &status, 0);
         if (WIFEXITED(status)) return WEXITSTATUS(status);
         return -1;
     }
 }
-
-} 
+}
