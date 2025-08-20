@@ -78,6 +78,21 @@ ConfigPath="assets/config.hc"  # HTTP Custom config file
 
 ## 🧠 How It Works
 
+### ⚡ Multi-Core Parallel Processing
+ProxyNet leverages your CPU's full potential by running operations across multiple cores simultaneously:
+
+```cpp
+// Dedicate Core 1 for buttery-smooth UI animations
+CPU_ZERO(&cpuset);
+CPU_SET(1, &cpuset);  // UI thread on core 1
+pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+
+// Dedicate Core 0 for heavy ADB operations  
+CPU_ZERO(&cpuset);
+CPU_SET(0, &cpuset);  // Worker thread on core 0
+pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset);
+```
+
 ### 🔄 **Intelligent Splash Detection**
 ProxyNet uses pixel-perfect mathematics to detect when HTTP Custom is ready:
 
